@@ -6,6 +6,77 @@ import matplotlib.pyplot as plt
 # Page config
 st.set_page_config(page_title="FORESIGHT - Inventory Intelligence", layout="wide")
 
+# Custom CSS - dark blue/pink neon gradient theme
+st.markdown("""
+<style>
+.stApp {
+    background: linear-gradient(135deg, #0a1128 0%, #1b2a4a 25%, #3d1a5c 50%, #6b1e5e 75%, #1a0b2e 100%);
+}
+
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0a1128 0%, #2d1245 100%);
+    border-right: 1px solid rgba(236, 72, 153, 0.35);
+}
+
+h1, h2, h3 {
+    color: #ffffff !important;
+    text-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 0 30px rgba(236, 72, 153, 0.4);
+}
+
+p, span, label, .stMarkdown {
+    color: #dce3f5 !important;
+}
+
+[data-testid="stMetric"] {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 0 25px rgba(236, 72, 153, 0.2), 0 0 15px rgba(59, 130, 246, 0.2);
+}
+
+[data-testid="stMetricValue"] {
+    color: #f472b6 !important;
+    text-shadow: 0 0 15px rgba(244, 114, 182, 0.7);
+}
+
+[data-testid="stMetricLabel"] {
+    color: #93c5fd !important;
+}
+
+.stDataFrame, [data-testid="stTable"] {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.stButton>button, .stRadio {
+    color: #ffffff;
+}
+
+[data-testid="stSidebarNav"], .stRadio label {
+    color: #dce3f5 !important;
+}
+
+.stAlert {
+    background: rgba(236, 72, 153, 0.1);
+    border: 1px solid rgba(236, 72, 153, 0.4);
+    border-radius: 12px;
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+}
+::-webkit-scrollbar-track {
+    background: #0a1128;
+}
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #3b82f6, #ec4899);
+    border-radius: 10px;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # Load data
 @st.cache_data
 def load_data():
