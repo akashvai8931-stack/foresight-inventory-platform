@@ -114,7 +114,7 @@ df = load_data()
 
 # Sidebar navigation
 st.sidebar.title("📦 FORESIGHT")
-page = st.sidebar.radio("Navigate", ["Home", "Sales Analytics", "Demand Forecast", "Risk Dashboard", "Product Details", "Executive Summary"])
+page = st.sidebar.radio("Navigate", ["Home", "Sales Analytics", "Demand Forecast", "Inventory Dashboard", "Risk Dashboard", "Product Details", "Executive Summary"])
 
 # Home page
 if page == "Home":
@@ -229,6 +229,64 @@ elif page == "Demand Forecast":
     ax_imp.barh(importances.index, importances.values, color=CHART_PALETTE[:len(importances)])
     ax_imp.set_xlabel("Importance")
     st.pyplot(fig_imp)
+
+# Inventory Dashboard page
+elif page == "Inventory Dashboard":
+    st.title("📦 Inventory Dashboard")
+
+    # Filters
+    inv_col1, inv_col2 = st.columns(2)
+    with inv_col1:
+        warehouse_filter = st.multiselect("Filter by Warehouse", options=df['warehouse_location'].unique(), default=df['warehouse_location'].unique())
+    with inv_col2:
+        category_filter_inv = st.multiselect("Filter by Category", options=df['category'].unique(), default=df['category'].unique(), key="inv_cat")
+
+    inv_df = df[df['warehouse_location'].isin(warehouse_filter) & df['category'].isin(category_filter_inv)]
+
+    # Latest stock snapshot per SKU
+    latest_stock = inv_df.sort_values('date').groupby('sku_id').tail(1).copy()
+    latest_stock['stock_status'] = np.where(
+        latest_stock['stock_level'] < latest_stock['reorder_point'], 'Understocked',
+        np.where(latest_stock['stock_level'] > latest_stock['reorder_point'] * 3, 'Overstocked', 'Adequate')
+    )
+    latest_stock['inventory_value'] = latest_stock['stock_level'] * latest_stock['unit_cost']
+
+    # Summary metrics
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Total Units in Stock", f"{int(latest_stock['stock_level'].sum()):,}")
+    col2.metric("Total Inventory Value", f"₹{latest_stock['inventory_value'].sum():,.0f}")
+    col3.metric("Understocked SKUs", int((latest_stock['stock_status'] == 'Understocked').sum()))
+    col4.metric("Overstocked SKUs", int((latest_stock['stock_status'] == 'Overstocked').sum()))
+
+    # Stock vs Reorder Point chart
+    st.subheader("Current Stock vs Reorder Point")
+    stock_sorted = latest_stock.sort_values('stock_level', ascending=True)
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.barh(stock_sorted['product_name'], stock_sorted['stock_level'], color=NEON_BLUE, alpha=0.8, label='Current Stock')
+    ax.scatter(stock_sorted['reorder_point'], stock_sorted['product_name'], color=NEON_PINK, s=60, zorder=5, label='Reorder Point')
+    ax.set_xlabel("Units")
+    ax.legend(facecolor="#140f2d", edgecolor="#4c3a6e", labelcolor="#dce3f5")
+    st.pyplot(fig)
+
+    # Stock status breakdown
+    st.subheader("Stock Status by Warehouse")
+    status_by_wh = latest_stock.groupby(['warehouse_location', 'stock_status']).size().unstack(fill_value=0)
+    fig2, ax2 = plt.subplots(figsize=(10, 5))
+    status_by_wh.plot(kind='bar', stacked=True, ax=ax2, color=[CHART_PALETTE[i] for i in range(len(status_by_wh.columns))])
+    ax2.set_ylabel("Number of SKUs")
+    ax2.set_xlabel("Warehouse")
+    plt.setp(ax2.get_xticklabels(), rotation=0)
+    ax2.legend(facecolor="#140f2d", edgecolor="#4c3a6e", labelcolor="#dce3f5")
+    st.pyplot(fig2)
+
+    # Detailed inventory table
+    st.subheader("Inventory Detail")
+    st.dataframe(
+        latest_stock[['sku_id', 'product_name', 'warehouse_location', 'stock_level', 'reorder_point',
+                      'stock_status', 'unit_cost', 'inventory_value']]
+        .sort_values('inventory_value', ascending=False)
+        .reset_index(drop=True)
+    )
 
 # Risk Dashboard page
 elif page == "Risk Dashboard":
