@@ -3,6 +3,28 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Global matplotlib dark theme to match the app
+plt.rcParams.update({
+    "figure.facecolor": "#140f2d",
+    "axes.facecolor": "#140f2d",
+    "savefig.facecolor": "#140f2d",
+    "axes.edgecolor": "#4c3a6e",
+    "axes.labelcolor": "#dce3f5",
+    "xtick.color": "#93c5fd",
+    "ytick.color": "#93c5fd",
+    "text.color": "#dce3f5",
+    "grid.color": "#2a2350",
+    "axes.grid": True,
+    "grid.alpha": 0.4,
+    "font.size": 10,
+})
+
+NEON_BLUE = "#3b82f6"
+NEON_PINK = "#f472b6"
+NEON_PURPLE = "#a855f7"
+NEON_CYAN = "#22d3ee"
+CHART_PALETTE = [NEON_BLUE, NEON_PINK, NEON_PURPLE, NEON_CYAN, "#fb7185", "#60a5fa", "#e879f9", "#38bdf8"]
+
 # Page config
 st.set_page_config(page_title="FORESIGHT - Inventory Intelligence", layout="wide")
 
@@ -10,7 +32,7 @@ st.set_page_config(page_title="FORESIGHT - Inventory Intelligence", layout="wide
 st.markdown("""
 <style>
 .stApp {
-    background: linear-gradient(135deg, #0a1128 0%, #1b2a4a 25%, #3d1a5c 50%, #6b1e5e 75%, #1a0b2e 100%);
+    background: linear-gradient(135deg, #060a1f 0%, #0a1128 12%, #142850 28%, #1b2a4a 40%, #2d1b54 55%, #4a1a5e 68%, #6b1e5e 80%, #3a0f4a 92%, #1a0b2e 100%);
 }
 
 [data-testid="stSidebar"] {
@@ -120,7 +142,8 @@ elif page == "Sales Analytics":
     st.subheader("Daily Sales Trend")
     daily_sales = filtered_df.groupby('date')['units_sold'].sum()
     fig, ax = plt.subplots(figsize=(12, 4))
-    ax.plot(daily_sales.index, daily_sales.values)
+    ax.plot(daily_sales.index, daily_sales.values, color=NEON_CYAN, linewidth=1.5)
+    ax.fill_between(daily_sales.index, daily_sales.values, color=NEON_CYAN, alpha=0.1)
     ax.set_xlabel("Date")
     ax.set_ylabel("Units Sold")
     st.pyplot(fig)
@@ -129,10 +152,20 @@ elif page == "Sales Analytics":
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Units Sold by Category")
-        st.bar_chart(filtered_df.groupby('category')['units_sold'].sum())
+        cat_units = filtered_df.groupby('category')['units_sold'].sum().sort_values(ascending=False)
+        fig1, ax1 = plt.subplots(figsize=(6, 4))
+        ax1.bar(cat_units.index, cat_units.values, color=CHART_PALETTE[:len(cat_units)])
+        ax1.set_ylabel("Units Sold")
+        plt.setp(ax1.get_xticklabels(), rotation=30, ha='right')
+        st.pyplot(fig1)
     with col2:
         st.subheader("Revenue by Category")
-        st.bar_chart(filtered_df.groupby('category')['revenue'].sum())
+        cat_rev = filtered_df.groupby('category')['revenue'].sum().sort_values(ascending=False)
+        fig2, ax2 = plt.subplots(figsize=(6, 4))
+        ax2.bar(cat_rev.index, cat_rev.values, color=CHART_PALETTE[1:len(cat_rev)+1])
+        ax2.set_ylabel("Revenue")
+        plt.setp(ax2.get_xticklabels(), rotation=30, ha='right')
+        st.pyplot(fig2)
 
     # Promotion impact
     st.subheader("Promotion Impact")
@@ -185,14 +218,17 @@ elif page == "Demand Forecast":
 
     st.subheader("Actual vs Predicted (Test Period)")
     fig, ax = plt.subplots(figsize=(12, 4))
-    ax.plot(y_test.values, label='Actual', alpha=0.7)
-    ax.plot(y_pred, label='Predicted', alpha=0.7)
-    ax.legend()
+    ax.plot(y_test.values, label='Actual', color=NEON_BLUE, linewidth=1.5, alpha=0.9)
+    ax.plot(y_pred, label='Predicted', color=NEON_PINK, linewidth=1.5, alpha=0.9)
+    ax.legend(facecolor="#140f2d", edgecolor="#4c3a6e", labelcolor="#dce3f5")
     st.pyplot(fig)
 
     st.subheader("Feature Importance")
-    importances = pd.Series(model.feature_importances_, index=feature_cols).sort_values(ascending=False)
-    st.bar_chart(importances)
+    importances = pd.Series(model.feature_importances_, index=feature_cols).sort_values(ascending=True)
+    fig_imp, ax_imp = plt.subplots(figsize=(10, 6))
+    ax_imp.barh(importances.index, importances.values, color=CHART_PALETTE[:len(importances)])
+    ax_imp.set_xlabel("Importance")
+    st.pyplot(fig_imp)
 
 # Risk Dashboard page
 elif page == "Risk Dashboard":
@@ -224,10 +260,10 @@ elif page == "Risk Dashboard":
     st.subheader("Risk Score by Product")
     risk_sorted = latest.sort_values('risk_score', ascending=True)
     fig, ax = plt.subplots(figsize=(10, 6))
-    colors = ['red' if x >= 70 else 'orange' if x >= 40 else 'green' for x in risk_sorted['risk_score']]
+    colors = ['#f87171' if x >= 70 else '#fbbf24' if x >= 40 else '#4ade80' for x in risk_sorted['risk_score']]
     ax.barh(risk_sorted['product_name'], risk_sorted['risk_score'], color=colors)
     ax.set_xlabel("Risk Score (0-100)")
-    ax.axvline(x=70, color='black', linestyle='--', alpha=0.3)
+    ax.axvline(x=70, color=NEON_PINK, linestyle='--', alpha=0.6)
     st.pyplot(fig)
 
     # Detailed table
@@ -262,22 +298,27 @@ elif page == "Product Details":
 
     st.subheader("Sales History")
     fig, ax = plt.subplots(figsize=(12, 4))
-    ax.plot(product_df['date'], product_df['units_sold'])
+    ax.plot(product_df['date'], product_df['units_sold'], color=NEON_CYAN, linewidth=1.5)
+    ax.fill_between(product_df['date'], product_df['units_sold'], color=NEON_CYAN, alpha=0.1)
     ax.set_xlabel("Date")
     ax.set_ylabel("Units Sold")
     st.pyplot(fig)
 
     st.subheader("Stock Level Over Time")
     fig2, ax2 = plt.subplots(figsize=(12, 4))
-    ax2.plot(product_df['date'], product_df['stock_level'], color='orange')
-    ax2.axhline(y=product_df['reorder_point'].iloc[0], color='red', linestyle='--', label='Reorder Point')
+    ax2.plot(product_df['date'], product_df['stock_level'], color=NEON_PINK, linewidth=1.5)
+    ax2.axhline(y=product_df['reorder_point'].iloc[0], color="#fbbf24", linestyle='--', label='Reorder Point')
     ax2.set_xlabel("Date")
     ax2.set_ylabel("Stock Level")
-    ax2.legend()
+    ax2.legend(facecolor="#140f2d", edgecolor="#4c3a6e", labelcolor="#dce3f5")
     st.pyplot(fig2)
 
     st.subheader("Sales by Channel")
-    st.bar_chart(product_df.groupby('sales_channel')['units_sold'].sum())
+    channel_sales = product_df.groupby('sales_channel')['units_sold'].sum().sort_values(ascending=False)
+    fig3, ax3 = plt.subplots(figsize=(8, 4))
+    ax3.bar(channel_sales.index, channel_sales.values, color=CHART_PALETTE[:len(channel_sales)])
+    ax3.set_ylabel("Units Sold")
+    st.pyplot(fig3)
 
 # Executive Summary page
 elif page == "Executive Summary":
